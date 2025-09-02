@@ -8,7 +8,6 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragOverlay,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -90,24 +89,9 @@ function SortableTask({ task, index }) {
 function TaskBoard() {
   const [columns, setColumns] = useState(initialColumns);
   const sensors = useSensors(useSensor(PointerSensor));
-  const [activeId, setActiveId] = useState(null);
-  const [activeCol, setActiveCol] = useState(null);
-
-  function findTask(id) {
-    for (const col of Object.values(columns)) {
-      const found = col.find((t) => t.id === id);
-      if (found) return found;
-    }
-    return null;
-  }
-
-  function handleDragStart(event) {
-    setActiveId(event.active.id);
-  }
 
   function handleDragEnd(event) {
     const { active, over } = event;
-    setActiveId(null);
     if (!over) return;
 
     let sourceCol, destCol;
@@ -138,6 +122,9 @@ function TaskBoard() {
     });
   }
 
+  // Track which column is being hovered for drop highlight
+  const [activeCol, setActiveCol] = useState(null);
+
   function handleDragOver(event) {
     const { over } = event;
     if (over) setActiveCol(over.id);
@@ -146,14 +133,12 @@ function TaskBoard() {
 
   function handleDragCancel() {
     setActiveCol(null);
-    setActiveId(null);
   }
 
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragOver={handleDragOver}
       onDragCancel={handleDragCancel}
@@ -170,11 +155,6 @@ function TaskBoard() {
           </DroppableColumn>
         ))}
       </Grid>
-      <DragOverlay>
-        {activeId ? (
-          <SortableTask task={findTask(activeId)} index={0} />
-        ) : null}
-      </DragOverlay>
     </DndContext>
   );
 }
