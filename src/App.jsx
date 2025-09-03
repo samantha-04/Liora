@@ -156,6 +156,26 @@ function CalendarPanel() {
 
 function App() {
   const [tab, setTab] = useState(0); // 0 = Taskboard, 1 = Calendar
+  const [addOpen, setAddOpen] = useState(false);
+  const [newTask, setNewTask] = useState({ name: '', priority: '', addToCalendar: false });
+  const [addedTasks, setAddedTasks] = useState([]); // all added tasks
+
+  const handleAddTask = () => {
+    if (!newTask.name || !newTask.priority) return; // require name and priority
+    setAddedTasks(prev => [
+      {
+        id: `task-${Date.now()}`,
+        name: newTask.name,
+        tag: 'Energy', // default tag, can be improved
+        priority: newTask.priority,
+        addToCalendar: newTask.addToCalendar,
+      },
+      ...prev
+    ]);
+    setAddOpen(false);
+    setNewTask({ name: '', priority: '', addToCalendar: false });
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <Box
@@ -180,7 +200,7 @@ function App() {
           <Heading />
         </Box>
         {/* Tab Bar - now directly under header, center aligned, transparent background, plum outline/text */}
-  <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 0, mb: 0.2, zIndex: 2 }}>
+        <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 0, mb: 0.2, zIndex: 2 }}>
           <Box sx={{ borderRadius: 99, px: 2, py: 1, background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto' }}>
             <Tabs
               value={tab}
@@ -214,6 +234,108 @@ function App() {
             </Tabs>
           </Box>
         </Box>
+        {/* Add Task Button (only on Taskboard tab) */}
+        {tab === 0 && (
+          <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 2, mb: 1 }}>
+            <button
+              style={{
+                background: colors.accent,
+                color: '#3E2C41',
+                border: 'none',
+                borderRadius: 99,
+                padding: '8px 24px',
+                fontSize: '16px',
+                fontWeight: 600,
+                boxShadow: '0 2px 8px #FFD9B3',
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+              }}
+              onClick={() => setAddOpen(true)}
+            >
+              Add Task +
+            </button>
+          </Box>
+        )}
+        {/* Add Task Popup Dialog */}
+        {addOpen && (
+          <Box sx={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 9999, background: 'rgba(60,40,80,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Paper elevation={6} sx={{ minWidth: 340, maxWidth: 380, p: 4, borderRadius: 4, background: colors.background, boxShadow: '0 4px 32px #E9D9FF' }}>
+              <Typography variant="h6" sx={{ mb: 2, textAlign: 'center', color: '#3E2C41', fontWeight: 700 }}>Add New Task</Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <input
+                  type="text"
+                  placeholder="Task name"
+                  value={newTask.name}
+                  onChange={e => setNewTask({ ...newTask, name: e.target.value })}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    border: '1px solid #E9D9FF',
+                    fontSize: '15px',
+                    marginBottom: '8px',
+                  }}
+                />
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Typography sx={{ fontSize: 14, fontWeight: 500, mb: 0.5 }}>Priority</Typography>
+                  <select
+                    value={newTask.priority}
+                    onChange={e => setNewTask({ ...newTask, priority: e.target.value })}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: 8,
+                      border: '1px solid #FFD9B3',
+                      fontSize: '14px',
+                    }}
+                  >
+                    <option value="">Select priority...</option>
+                    <option value="Low">Low — Can do anytime 🌱</option>
+                    <option value="Medium">Medium — Worth focusing 🌸</option>
+                    <option value="High">High — Matters most ✨</option>
+                  </select>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                  <input
+                    type="checkbox"
+                    checked={newTask.addToCalendar}
+                    onChange={e => setNewTask({ ...newTask, addToCalendar: e.target.checked })}
+                  />
+                  <Typography sx={{ fontSize: 14 }}>Add to Calendar</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 2 }}>
+                  <button
+                    style={{
+                      background: colors.secondary,
+                      color: '#3E2C41',
+                      border: 'none',
+                      borderRadius: 99,
+                      padding: '8px 20px',
+                      fontSize: '15px',
+                      fontWeight: 600,
+                      boxShadow: '0 1px 4px #E9D9FF',
+                      cursor: 'pointer',
+                      marginRight: '8px',
+                    }}
+                    onClick={handleAddTask}
+                  >Add</button>
+                  <button
+                    style={{
+                      background: '#FFF8F0',
+                      color: '#3E2C41',
+                      border: '1px solid #E9D9FF',
+                      borderRadius: 99,
+                      padding: '8px 20px',
+                      fontSize: '15px',
+                      fontWeight: 600,
+                      boxShadow: 'none',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => setAddOpen(false)}
+                  >Cancel</button>
+                </Box>
+              </Box>
+            </Paper>
+          </Box>
+        )}
         {/* Main Content Area */}
         <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100vw', height: '100%', overflow: 'hidden', position: 'relative', zIndex: 1 }}>
           <AnimatePresence mode="wait">
@@ -227,7 +349,7 @@ function App() {
                 style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
               >
                 <Box sx={{ width: '100%', maxWidth: 900, mx: 'auto' }}>
-                  <TaskBoard />
+                  <TaskBoard addedTasks={addedTasks} />
                 </Box>
               </motion.div>
             )}

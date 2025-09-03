@@ -37,22 +37,33 @@ const initialColumns = {
 
 function DroppableColumn({ columnId, tasks, children, isOver }) {
   const { setNodeRef, isOver: dndOver } = useDroppable({ id: columnId });
+  // If more than 4 tasks, show vertical scrollbar
+  const isCrowded = tasks.length > 4;
   return (
-  <Grid ref={setNodeRef} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <Grid ref={setNodeRef} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {/* Column header/title (not scrolling) */}
+      <Box sx={{ width: '100%' }}>
+        {children[0]}
+      </Box>
+      {/* Tasks list (scrolls if crowded) */}
       <Box sx={{
-        borderRadius: 4,
+        borderRadius: 0,
         transition: 'box-shadow 0.2s',
         boxShadow: 'none',
-  background: 'transparent',
+        background: 'transparent',
         p: 1,
+        maxHeight: isCrowded ? 420 : 'none',
+        overflowY: isCrowded ? 'auto' : 'visible',
+        width: '100%',
       }}>
-        {children}
+        {/* Render all children except the first (header) */}
+        {children.slice(1)}
       </Box>
     </Grid>
   );
 }
 
-function SortableTask({ task, index }) {
+function SortableTask({ task, index, onDelete, onEdit }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging, isSorting } = useSortable({ id: task.id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -69,23 +80,44 @@ function SortableTask({ task, index }) {
     Neutral:{ bg: '#FFF8F0', color: '#5A5A5A', text: '' },
   };
   const prio = task.priority ? priorityStyles[task.priority] : priorityStyles.Neutral;
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [menuPos, setMenuPos] = React.useState({ x: 0, y: 0 });
+
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    setMenuOpen(true);
+    setMenuPos({ x: e.clientX, y: e.clientY });
+  };
+  const handleCloseMenu = () => setMenuOpen(false);
+  const handleDelete = (e) => {
+    e.stopPropagation();
+    handleCloseMenu();
+    if (onDelete) onDelete(task.id);
+  };
+  const handleEdit = (e) => {
+    e.stopPropagation();
+    handleCloseMenu();
+    if (onEdit) onEdit(task);
+  };
+
+  // Delete and edit handlers will be passed from parent
   return (
-    <MotionPaper
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      elevation={3}
-      sx={{ p: 2, mb: 2, borderRadius: 1.5, background: colors.background, minHeight: 64, minWidth: 220, maxWidth: 340 }}
-      initial={{ opacity: 0.9, scale: 0.98 }}
-      animate={{ scale: isDragging ? 1.05 : 1, boxShadow: isDragging ? `0 0 24px ${colors.accent}` : '0 2px 8px #FFD9B3' }}
-      whileHover={{ scale: 1.03, boxShadow: `0 0 16px ${colors.accent}` }}
-      whileTap={{ scale: 0.97 }}
-      style={style}
-    >
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 1 }}>
-        <Typography>{task.name}</Typography>
-        <Box sx={{ display: 'flex', gap: 1, mt: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Chip label={task.tag} color={index % 2 === 0 ? 'info' : 'secondary'} size="small" />
+    <>
+      <MotionPaper
+        ref={setNodeRef}
+        {...attributes}
+        {...listeners}
+        elevation={3}
+        sx={{ p: 2, mb: 2, borderRadius: 1.5, background: colors.background, minHeight: 64, minWidth: 220, maxWidth: 340 }}
+        initial={{ opacity: 0.9, scale: 0.98 }}
+        animate={{ scale: isDragging ? 1.05 : 1, boxShadow: isDragging ? `0 0 24px ${colors.accent}` : '0 2px 8px #FFD9B3' }}
+        whileHover={{ scale: 1.03, boxShadow: `0 0 16px ${colors.accent}` }}
+        whileTap={{ scale: 0.97 }}
+        style={style}
+        onContextMenu={handleContextMenu}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 1 }}>
+          <Typography>{task.name}</Typography>
           <Box sx={{
             px: 1.5,
             py: 0.5,
@@ -104,30 +136,134 @@ function SortableTask({ task, index }) {
             {task.priority ? prio.text : ''}
           </Box>
         </Box>
-      </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <button style={{
-          background: colors.accent,
-          color: '#3E2C41',
-          border: 'none',
-          borderRadius: 12,
-          padding: '4px 12px',
-          fontSize: 13,
-          cursor: 'pointer',
-          fontFamily: 'inherit',
-          boxShadow: '0 1px 4px #FFD9B3',
-          transition: 'background 0.2s',
-        }}>Add to Calendar</button>
-      </Box>
-    </MotionPaper>
+      </MotionPaper>
+      {menuOpen && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            zIndex: 9999,
+            background: 'transparent',
+          }}
+          onClick={handleCloseMenu}
+        >
+          <Box
+            sx={{
+              position: 'absolute',
+              top: menuPos.y,
+              left: menuPos.x,
+              background: colors.panel,
+              borderRadius: 2,
+              boxShadow: '0 2px 12px #E9D9FF',
+              p: 1,
+              minWidth: 120,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <button style={{
+              background: colors.accent,
+              color: '#3E2C41',
+              border: 'none',
+              borderRadius: 6,
+              padding: '6px 8px',
+              fontSize: 14,
+              fontWeight: 500,
+              cursor: 'pointer',
+              marginBottom: 4,
+              minWidth: 80,
+              maxWidth: 110,
+            }} onClick={handleEdit}>Edit Task</button>
+            <button style={{
+              background: '#FFF8F0',
+              color: '#C0392B',
+              border: 'none',
+              borderRadius: 6,
+              padding: '6px 8px',
+              fontSize: 14,
+              fontWeight: 500,
+              cursor: 'pointer',
+              minWidth: 80,
+              maxWidth: 110,
+            }} onClick={handleDelete}>Delete Task</button>
+          </Box>
+        </Box>
+      )}
+    </>
   );
 }
 
-function TaskBoard() {
+function TaskBoard({ addedTasks }) {
   const [columns, setColumns] = useState(initialColumns);
   const [activeId, setActiveId] = useState(null);
   const [activeCol, setActiveCol] = useState(null);
+  const [editTask, setEditTask] = useState(null);
+  const [editPopupOpen, setEditPopupOpen] = useState(false);
+  const [editTaskData, setEditTaskData] = useState({ name: '', priority: '', addToCalendar: false });
   const sensors = useSensors(useSensor(PointerSensor));
+
+  React.useEffect(() => {
+    if (Array.isArray(addedTasks) && addedTasks.length > 0) {
+      setColumns(prev => {
+        // Filter out any tasks already present by id
+        const newToDo = [
+          ...addedTasks.filter(t => !prev['To-Do'].some(existing => existing.id === t.id)),
+          ...prev['To-Do']
+        ];
+        return {
+          ...prev,
+          'To-Do': newToDo,
+        };
+      });
+    }
+  }, [addedTasks]);
+
+  // Delete a task by id from all columns
+  const handleDeleteTask = (id) => {
+    setColumns(prev => {
+      const updated = {};
+      for (const col in prev) {
+        updated[col] = prev[col].filter(t => t.id !== id);
+      }
+      return updated;
+    });
+  };
+
+  // Edit a task: open popup
+  const handleEditTask = (task) => {
+    setEditTask(task);
+    setEditTaskData({
+      name: task.name,
+      priority: task.priority,
+      addToCalendar: !!task.addToCalendar,
+    });
+    setEditPopupOpen(true);
+  };
+
+  const handleEditPopupSave = () => {
+    setColumns(prev => {
+      const updated = {};
+      for (const col in prev) {
+        updated[col] = prev[col].map(t =>
+          t.id === editTask.id ? { ...t, ...editTaskData } : t
+        );
+      }
+      return updated;
+    });
+    setEditPopupOpen(false);
+    setEditTask(null);
+  };
+
+  const handleEditPopupCancel = () => {
+    setEditPopupOpen(false);
+    setEditTask(null);
+  };
 
   function findTask(id) {
     for (const col of Object.values(columns)) {
@@ -197,7 +333,7 @@ function TaskBoard() {
               <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, textAlign: 'center', width: '100%' }}>{colId}</Typography>
               <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
                 {tasks.map((task, i) => (
-                  <SortableTask key={task.id} task={task} index={i} />
+                  <SortableTask key={task.id} task={task} index={i} onDelete={handleDeleteTask} onEdit={handleEditTask} />
                 ))}
               </SortableContext>
             </DroppableColumn>
@@ -209,6 +345,86 @@ function TaskBoard() {
           ) : null}
         </DragOverlay>
       </DndContext>
+      {/* Edit Task Popup Dialog */}
+      {editPopupOpen && (
+        <Box sx={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 9999, background: 'rgba(60,40,80,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Paper elevation={6} sx={{ minWidth: 340, maxWidth: 380, p: 4, borderRadius: 4, background: colors.background, boxShadow: '0 4px 32px #E9D9FF' }}>
+            <Typography variant="h6" sx={{ mb: 2, textAlign: 'center', color: '#3E2C41', fontWeight: 700 }}>Edit Task</Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <input
+                type="text"
+                placeholder="Task name"
+                value={editTaskData.name}
+                onChange={e => setEditTaskData({ ...editTaskData, name: e.target.value })}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  border: '1px solid #E9D9FF',
+                  fontSize: '15px',
+                  marginBottom: '8px',
+                }}
+              />
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Typography sx={{ fontSize: 14, fontWeight: 500, mb: 0.5 }}>Priority</Typography>
+                <select
+                  value={editTaskData.priority}
+                  onChange={e => setEditTaskData({ ...editTaskData, priority: e.target.value })}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 8,
+                    border: '1px solid #FFD9B3',
+                    fontSize: '14px',
+                  }}
+                >
+                  <option value="">Select priority...</option>
+                  <option value="Low">Low — Can do anytime 🌱</option>
+                  <option value="Medium">Medium — Worth focusing 🌸</option>
+                  <option value="High">High — Matters most ✨</option>
+                </select>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                <input
+                  type="checkbox"
+                  checked={editTaskData.addToCalendar}
+                  onChange={e => setEditTaskData({ ...editTaskData, addToCalendar: e.target.checked })}
+                />
+                <Typography sx={{ fontSize: 14 }}>Add to Calendar</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 2 }}>
+                <button
+                  style={{
+                    background: colors.secondary,
+                    color: '#3E2C41',
+                    border: 'none',
+                    borderRadius: 99,
+                    padding: '8px 20px',
+                    fontSize: '15px',
+                    fontWeight: 600,
+                    boxShadow: '0 1px 4px #E9D9FF',
+                    cursor: 'pointer',
+                    marginRight: '8px',
+                  }}
+                  onClick={handleEditPopupSave}
+                >Save</button>
+                <button
+                  style={{
+                    background: '#FFF8F0',
+                    color: '#3E2C41',
+                    border: '1px solid #E9D9FF',
+                    borderRadius: 99,
+                    padding: '8px 20px',
+                    fontSize: '15px',
+                    fontWeight: 600,
+                    boxShadow: 'none',
+                    cursor: 'pointer',
+                  }}
+                  onClick={handleEditPopupCancel}
+                >Cancel</button>
+              </Box>
+            </Box>
+          </Paper>
+        </Box>
+      )}
     </Box>
   );
 }
