@@ -1,19 +1,68 @@
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+// ...existing imports...
+function TabSeparator() {
+  return (
+    <span style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '100%',
+      fontWeight: 400,
+      color: '#3E2C41',
+      fontSize: '18.2px',
+      margin: '0 16px',
+      lineHeight: 1,
+      position: 'relative',
+  top: '11px', // move down a tiny bit more
+    }}>
+      |
+    </span>
+  );
+}
+
+
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+import Heading from './Heading';
+import Calendar from './Calendar';
+import React, { useState } from 'react';
 import Box from '@mui/material/Box';
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import Paper from '@mui/material/Paper';
 import Grid from '@mui/material/Grid';
-import SettingsIcon from '@mui/icons-material/Settings';
-import WbSunnyIcon from '@mui/icons-material/WbSunny';
-import EditIcon from '@mui/icons-material/Edit';
-import { motion } from 'framer-motion';
-import './App.css';
+import Typography from '@mui/material/Typography';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+import { motion, AnimatePresence } from 'framer-motion';
+function BackgroundGlow() {
+  const shapes = [
+    { top: '10%', left: '15%', size: 220, color: 'rgba(255, 233, 200, 0.45)' },
+    { top: '60%', left: '70%', size: 180, color: 'rgba(233, 217, 255, 0.35)' },
+    { top: '40%', left: '30%', size: 140, color: 'rgba(255, 217, 179, 0.35)' },
+    { top: '75%', left: '20%', size: 120, color: 'rgba(255, 255, 200, 0.25)' },
+    { top: '20%', left: '80%', size: 160, color: 'rgba(255, 217, 255, 0.25)' },
+  ];
+  return (
+    <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 0 }}>
+      {shapes.map((s, i) => (
+        <Box
+          key={i}
+          sx={{
+            position: 'absolute',
+            top: s.top,
+            left: s.left,
+            width: s.size,
+            height: s.size,
+            borderRadius: '50%',
+            background: s.color,
+            filter: 'blur(32px)',
+            opacity: 0.7,
+          }}
+        />
+      ))}
+    </Box>
+  );
+}
+
 import TaskBoard from './TaskBoard';
+
+import Paper from '@mui/material/Paper';
 
 
 const colors = {
@@ -48,29 +97,8 @@ const theme = createTheme({
   },
 });
 
-const MotionPaper = motion(Paper);
+const MotionPaper = motion.create(Paper);
 
-function TopBar() {
-  return (
-    <AppBar position="static" color="transparent" elevation={2} sx={{ borderRadius: 4, mb: 4, background: colors.panel }}>
-      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
-        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Good morning, Liora</Typography>
-        <Typography>{new Date().toLocaleDateString()}</Typography>
-        <Box>
-          <IconButton color="primary" aria-label="settings">
-            <SettingsIcon />
-          </IconButton>
-          <IconButton color="primary" aria-label="focus mode">
-            <WbSunnyIcon />
-          </IconButton>
-          <IconButton color="primary" aria-label="reflection/journaling">
-            <EditIcon />
-          </IconButton>
-        </Box>
-      </Toolbar>
-    </AppBar>
-  );
-}
 
 function KanbanBoard() {
   const columns = [
@@ -81,7 +109,7 @@ function KanbanBoard() {
   return (
     <Grid container spacing={4} justifyContent="center" sx={{ mb: 4 }}>
       {columns.map((col) => (
-        <Grid item key={col.title} xs={12} sm={4}>
+  <Grid key={col.title}>
           <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2 }}>{col.title}</Typography>
           {col.tasks.map((task, i) => (
             <MotionPaper
@@ -110,7 +138,7 @@ function CalendarPanel() {
       <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2 }}>Calendar (Preview)</Typography>
       <Grid container spacing={2}>
         {[...Array(7)].map((_, i) => (
-          <Grid item key={i} xs={12} sm={1.7}>
+          <Grid key={i}>
             <MotionPaper
               elevation={1}
               sx={{ p: 2, borderRadius: 2, background: colors.panel, minWidth: 80 }}
@@ -127,12 +155,98 @@ function CalendarPanel() {
 }
 
 function App() {
+  const [tab, setTab] = useState(0); // 0 = Taskboard, 1 = Calendar
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ minHeight: '100vh', background: colors.background, p: 2 }}>
-        <TopBar />
-        <TaskBoard />
-        <CalendarPanel />
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          minHeight: '100vh',
+          minWidth: '100vw',
+          background: 'linear-gradient(120deg, #FFF8F0 0%, #FFD9B3 60%, #E9D9FF 100%)',
+          p: 0,
+          boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        <BackgroundGlow />
+        <Box sx={{ position: 'relative', zIndex: 1 }}>
+          <Heading />
+        </Box>
+        {/* Tab Bar - now directly under header, center aligned, transparent background, plum outline/text */}
+  <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 0, mb: 0.2, zIndex: 2 }}>
+          <Box sx={{ borderRadius: 99, px: 2, py: 1, background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto' }}>
+            <Tabs
+              value={tab}
+              onChange={(_, v) => setTab(v)}
+              TabIndicatorProps={{ style: { display: 'none' } }}
+              sx={{
+                minHeight: 0,
+                '& .MuiTab-root': {
+                  borderRadius: 99,
+                  px: 3,
+                  py: 1,
+                  mx: 0.5,
+                  fontWeight: 600,
+                  fontSize: '12.6px',
+                  color: '#3E2C41',
+                  background: 'transparent',
+                  border: 'none',
+                  transition: 'background 0.2s',
+                },
+                '& .Mui-selected': {
+                  background: 'transparent',
+                  color: '#3E2C41',
+                  border: 'none',
+                  textDecoration: 'underline',
+                },
+              }}
+            >
+              <Tab label={<span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Taskboard</span>} />
+              <TabSeparator />
+              <Tab label={<span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Calendar</span>} />
+            </Tabs>
+          </Box>
+        </Box>
+        {/* Main Content Area */}
+        <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100vw', height: '100%', overflow: 'hidden', position: 'relative', zIndex: 1 }}>
+          <AnimatePresence mode="wait">
+            {tab === 0 && (
+              <motion.div
+                key="taskboard"
+                initial={{ opacity: 0, x: -40 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 40 }}
+                transition={{ duration: 0.35, ease: 'easeInOut' }}
+                style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+              >
+                <Box sx={{ width: '100%', maxWidth: 900, mx: 'auto' }}>
+                  <TaskBoard />
+                </Box>
+              </motion.div>
+            )}
+            {tab === 1 && (
+              <motion.div
+                key="calendar"
+                initial={{ opacity: 0, x: 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -40 }}
+                transition={{ duration: 0.35, ease: 'easeInOut' }}
+                style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+              >
+                <Box sx={{ width: '100%', maxWidth: 900, mx: 'auto' }}>
+                  <Calendar />
+                </Box>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </Box>
       </Box>
     </ThemeProvider>
   );

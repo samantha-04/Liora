@@ -1,0 +1,11 @@
+{
+  "name": "liora-desktop",
+  "version": "1.0.0",
+  "main": "electron-main.js",
+  "scripts": {
+    "electron": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^29.0.0"
+  }
+}
